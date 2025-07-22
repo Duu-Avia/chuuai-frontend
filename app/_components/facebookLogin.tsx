@@ -20,7 +20,7 @@ const FacebookConnect = () => {
     script.onload = () => {
       window.fbAsyncInit = function () {
         window.FB.init({
-          appId: "YOUR_FACEBOOK_APP_ID", // 👉 солино
+          appId: process.env.NEXT_PUBLIC_FACEBOOK_APP_ID!, 
           cookie: true,
           xfbml: false,
           version: "v19.0",
@@ -41,29 +41,40 @@ const FacebookConnect = () => {
         if (loginResponse.authResponse) {
           const userAccessToken = loginResponse.authResponse.accessToken;
 
-          // Get Pages the user manages
-          window.FB.api('/me/accounts', (pagesResponse: any) => {
-            const page = pagesResponse.data?.[0]; // ❗ TODO: UI дээр олон page-с сонголт хийх боломж нэмээрэй
+          window.FB.api("/me/accounts", (pagesResponse: any) => {
+            const page = pagesResponse.data?.[0];
 
             if (!page) return alert("No pages found.");
 
             const { id: pageId, access_token: pageAccessToken, name: pageName } = page;
 
-            // Send to your backend to save
-            fetch("https://your-backend-url.com/api/connect-page", {
+            // 👉 Send data to backend API
+            fetch("https://your-backend-url.onrender.com/api/connect-page", {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",
               },
-              body: JSON.stringify({ pageId, pageAccessToken, pageName }),
-            }).then(() => alert("Page connected! ✅"));
+              body: JSON.stringify({ pageId, accessToken: pageAccessToken, pageName }),
+            })
+              .then((res) => {
+                if (res.ok) {
+                  alert("✅ Facebook Page connected successfully!");
+                } else {
+                  alert("❌ Failed to save page on backend.");
+                }
+              })
+              .catch((err) => {
+                console.error("Error sending to backend:", err);
+                alert("❌ Error connecting page.");
+              });
           });
         } else {
-          alert("Facebook login failed.");
+          alert("Facebook login was cancelled or failed.");
         }
       },
       {
-        scope: "pages_manage_metadata,pages_messaging,pages_read_engagement,pages_show_list",
+        scope:
+          "pages_manage_metadata,pages_messaging,pages_read_engagement,pages_show_list",
       }
     );
   };
