@@ -48,8 +48,8 @@ const FacebookConnect = () => {
 
             const { id: pageId, access_token: pageAccessToken, name: pageName } = page;
 
-            // 👉 Send data to backend API
-            fetch("https://your-backend-url.onrender.com/api/connect-page", {
+            // Send data to backend API
+            fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/connect-page`, {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",
