@@ -1,10 +1,20 @@
-import Image from "next/image";
-import FacebookLogin from "./_components/facebookLogin";
+import Hero from "./_components/Hero";
+import Pricing from "./_components/Pricing";
+import Footer from "./_components/Footer";
+import Features from "./_components/Features";
+import Header from "./_components/Header";
 
-export default function Home() {
+
+const Page = () => {
   return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-   <FacebookLogin/>
+    <div className="min-h-screen bg-background">
+      <Header />
+      <Hero />
+      <Features />
+      <Pricing />
+      <Footer />
     </div>
   );
-}
+};
+
+export default Page;
