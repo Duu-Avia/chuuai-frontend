@@ -36,12 +36,18 @@ const Footer = () => {
           </div>
           
           <div>
-            <h3 className="font-semibold text-foreground mb-4">Support</h3>
+            <h3 className="font-semibold text-foreground mb-4">Terms and Policy</h3>
             <ul className="space-y-2 text-sm text-muted-foreground">
-              <li><a href="#" className="hover:text-foreground transition-colors">Help Center</a></li>
-              <li><a href="#" className="hover:text-foreground transition-colors">Status</a></li>
-              <li><a href="#" className="hover:text-foreground transition-colors">Privacy Policy</a></li>
-              <li><a href="#" className="hover:text-foreground transition-colors">Terms of Service</a></li>
+              <li>  <a href="/privacy-policy" className="text-muted-foreground hover:text-foreground transition-colors">
+              Privacy Policy
+            </a></li>
+              <li>   <a href="/terms" className="text-muted-foreground hover:text-foreground transition-colors">
+              Terms of serivce
+            </a></li>
+              <li> <a href="/delete-data" className="text-muted-foreground hover:text-foreground transition-colors">
+              Delete Data
+            </a></li>
+          
             </ul>
           </div>
         </div>
@@ -51,15 +57,9 @@ const Footer = () => {
             © 2024 ChuuAI. All rights reserved.
           </p>
           <div className="flex space-x-6 mt-4 md:mt-0">
-            <a href="#" className="text-muted-foreground hover:text-foreground transition-colors">
-              Twitter
-            </a>
-            <a href="#" className="text-muted-foreground hover:text-foreground transition-colors">
-              LinkedIn
-            </a>
-            <a href="#" className="text-muted-foreground hover:text-foreground transition-colors">
-              GitHub
-            </a>
+          
+         
+           
           </div>
         </div>
       </div>
