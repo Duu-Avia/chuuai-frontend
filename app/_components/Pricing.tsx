@@ -101,16 +101,25 @@ console.log("Selected Plan:", selectedPlan);
                   ))}
                 </ul>
                 <Link href="/page-connection" className="w-full">
-                <Button
-                variant={selectedPlan === plan.name ? "default" : "secondary"}
-                className={`cursor-pointer w-full mt-6 ${
-                    selectedPlan === plan.name ? "ring-2 ring-primary" : ""
-                }`}
-                size="lg"
-                onClick={() => setSelectedPlan(plan.name)}
-                >
-               Худалдаж авах
-                </Button>
+<Button
+  className={` w-full mt-6 cursor-pointer min-w-48 shadow-md hover:shadow-[0_0_50px_rgba(173,216,230,0.4)] hover:scale-105 transition-all duration-300 ${
+    plan.name === "Сошиал Про"
+      ? selectedPlan === plan.name
+        ? "bg-[#527AFF] text-white ring-2 ring-[#527AFF]"
+        : "bg-[#527AFF] text-white hover:bg-[#3e66f5]"
+      : selectedPlan === plan.name
+        ? "bg-[hsl(var(--primary))] text-white ring-2 ring-primary"
+        : "bg-muted text-foreground hover:bg-muted-foreground/10"
+  }`}
+  size="lg"
+  onClick={() => setSelectedPlan(plan.name)}
+>
+  Худалдаж авах
+</Button>
+
+
+
+
                 </Link>
               </CardContent>
             </Card>
