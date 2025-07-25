@@ -1,5 +1,7 @@
 "use client";
 import { useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 declare global {
   interface Window {
@@ -94,14 +96,21 @@ const FacebookConnect = () => {
   };
 
   return (
-    <div className="flex justify-center mt-10">
-      <button
-        onClick={handleLogin}
-        className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg"
-      >
-        Connect My Facebook Page
-      </button>
-    </div>
+    <div className="min-h-screen bg-[#0e0e10] flex items-center justify-center px-4">
+  <div className="max-w-md w-full bg-card border border-border shadow-md rounded-xl p-8 text-center">
+    <h1 className="text-3xl font-bold text-foreground mb-4">Сошиал хуудсаа холбох</h1>
+    <p className="text-muted-foreground mb-6">
+      Facebook болон Instagram хуудсаа ChuuAI chatbot-д холбохын тулд доорх товчийг дарна уу.
+    </p>
+    <button
+      onClick={handleLogin}
+      className="cursor-pointer bg-[#527AFF] text-white ring-2 ring-[#527AFF] px-6 py-3 text-white font-semibold rounded-lg transition"
+    >
+      Сошиал хуудсаа холбох
+    </button>
+  </div>
+</div>
+
   );
 };
 

@@ -102,7 +102,7 @@ console.log("Selected Plan:", selectedPlan);
                 </ul>
                 <Link href="/page-connection" className="w-full">
 <Button
-  className={` w-full mt-6 cursor-pointer min-w-48 shadow-md hover:shadow-[0_0_50px_rgba(173,216,230,0.4)] hover:scale-105 transition-all duration-300 ${
+  className={` w-full mt-6 cursor-pointer min-w-48 shadow-xs hover:shadow-[0_0_25px_rgba(173,216,230,0.4)] hover:scale-103 transition-all duration-300 ${
     plan.name === "Сошиал Про"
       ? selectedPlan === plan.name
         ? "bg-[#527AFF] text-white ring-2 ring-[#527AFF]"
