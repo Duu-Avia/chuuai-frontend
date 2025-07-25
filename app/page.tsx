@@ -4,7 +4,6 @@ import Footer from "./_components/Footer";
 import Features from "./_components/Features";
 import Header from "./_components/Header";
 
-
 const Page = () => {
   return (
     <div className="min-h-screen bg-background">
