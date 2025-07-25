@@ -1,70 +1,58 @@
 'use client';
-import { useRouter } from "next/navigation";
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { useState } from "react";
+import Link from "next/link";
 
 const Pricing = () => {
-  const [selectedPlan, setSelectedPlan] = useState("");
-  const [clickCount, setClickCount] = useState(0);
-  const router = useRouter();
-
-  const handleClick = (planName: string) => {
-    if (selectedPlan === planName && clickCount === 1) {
-      router.push("/page-connection");
-    } else {
-      setSelectedPlan(planName);
-      setClickCount(1);
-      setTimeout(() => setClickCount(0), 3000); // reset after 3s
-    }
-  };
-
+const[selectedPlan, setSelectedPlan] = useState("");
+console.log("Selected Plan:", selectedPlan);
   const plans = [
-    {
-      name: "Сошиал Стартер",
-      price: "100,000",
-      period: "/сард",
-      description: "Сошиал автоматжуулалтаа эхлүүлэх жижиг бизнест",
-      popular: false,
-      features: [
-        "AI автомат хариулт",
-        "Зарж буй бүтээгдэхүүн/үйлчилгээгээ санд хадгалах",
-        "Сард 1,500 мессеж хүртэл",
-      ]
-    },
-    {
-      name: "Сошиал Про",
-      price: "220,000",
-      period: "/сард",
-      description: "Өсөж буй бизнест зориулсан илүү хүчтэй сошиал шийдэл",
-      popular: true,
-      features: [
-        "AI автомат хариулт",
-        "Зарж буй бүтээгдэхүүн/үйлчилгээгээ санд хадгалах",
+  {
+    name: "Сошиал Стартер",
+    price: "100,000",
+    period: "/сард",
+    description: "Сошиал автоматжуулалтаа эхлүүлэх жижиг бизнест",
+    popular: false,
+    features: [
+      "AI автомат хариулт",
+      "Зарж буй бүтээгдэхүүн/үйлчилгээгээ санд хадгалах",
+       "Сард 1,500 мессеж хүртэл",
+    ]
+  },
+  {
+    name: "Сошиал Про",
+    price: "220,000",
+    period: "/сард",
+    description: "Өсөж буй бизнест зориулсан илүү хүчтэй сошиал шийдэл",
+    popular: true,
+    features: [
+      "AI автомат хариулт",
+      "Зарж буй бүтээгдэхүүн/үйлчилгээгээ санд хадгалах",
         "Admin хянах хэсэг",
-        "Сард 10,000 мессеж хүртэл",
-        "бараа үлдэгдэл анхааруулга",
-        "Захиалга хүлээн авах товч, процесс автоматжуулалт",
-      ]
-    },
-    {
-      name: "Сошиал Энтерпрайз",
-      price: "350,000",
-      period: "/сард",
-      description: "Томоохон брэндүүдэд бүрэн автоматжуулалт",
-      popular: false,
-      features: [
-        "AI автомат хариулт",
-        "Зарж буй бүтээгдэхүүн/үйлчилгээгээ санд хадгалах",
-        "Admin хянах хэсэг",
-        "Хязгааргүй мессеж",
-        "бараа үлдэгдэл анхааруулга",
-        "Захиалга хүлээн авах товч, процесс автоматжуулалт",
-        "Instagram хуудасаа үнэгүй холбох боломж"
-      ]
-    }
-  ];
+       "Сард 10,000 мессеж хүртэл",
+      "бараа үлдэгдэл анхааруулга",
+      "Захиалга хүлээн авах товч, процесс автоматжуулалт",
+    ]
+  },
+  {
+    name: "Сошиал Энтерпрайз",
+    price: "350,000",
+    period: "/сард",
+    description: "Томоохон брэндүүдэд бүрэн автоматжуулалт",
+    popular: false,
+    features: [
+      "AI автомат хариулт",
+      "Зарж буй бүтээгдэхүүн/үйлчилгээгээ санд хадгалах",
+      "Admin хянах хэсэг",
+       "Хязгааргүй мессеж ",
+      "бараа үлдэгдэл анхааруулга",
+       "Захиалга хүлээн авах товч, процесс автоматжуулалт",
+      "Instagram хуудасаа үнэгүй холбох боломж"
+    ]
+  }
+];
 
   return (
     <section id="pricing" className="py-20 px-6 bg-card/30">
@@ -74,14 +62,14 @@ const Pricing = () => {
             Та өөрт тохирох багцаа сонгоно уу?
           </h2>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            Таны бизнест тохируулсан уян хатан үнийн сонголтууд.
+           Таны бизнест тохируулсан уян хатан үнийн сонголтууд.
           </p>
         </div>
-
+        
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
           {plans.map((plan, index) => (
-            <Card
-              key={index}
+            <Card 
+              key={index} 
               className={`bg-card border-border hover:shadow-xl transition-all duration-300 relative ${
                 plan.popular ? 'border-primary/50 shadow-lg scale-105' : ''
               }`}
@@ -91,7 +79,7 @@ const Pricing = () => {
                   Most Popular
                 </Badge>
               )}
-
+              
               <CardHeader className="text-center pb-6">
                 <CardTitle className="text-2xl mb-2">{plan.name}</CardTitle>
                 <div className="flex items-baseline justify-center mb-4">
@@ -102,7 +90,7 @@ const Pricing = () => {
                   {plan.description}
                 </CardDescription>
               </CardHeader>
-
+              
               <CardContent className="space-y-6">
                 <ul className="space-y-3">
                   {plan.features.map((feature, featureIndex) => (
@@ -112,23 +100,25 @@ const Pricing = () => {
                     </li>
                   ))}
                 </ul>
-
+                <Link href="/page-connection" className="w-full">
                 <Button
-                  variant={selectedPlan === plan.name ? "default" : "secondary"}
-                  className={`cursor-pointer w-full mt-6 ${
+                variant={selectedPlan === plan.name ? "default" : "secondary"}
+                className={`cursor-pointer w-full mt-6 ${
                     selectedPlan === plan.name ? "ring-2 ring-primary" : ""
-                  }`}
-                  size="lg"
-                  onClick={() => handleClick(plan.name)}
+                }`}
+                size="lg"
+                onClick={() => setSelectedPlan(plan.name)}
                 >
-                  Худалдаж авах
+               Худалдаж авах
                 </Button>
+                </Link>
               </CardContent>
             </Card>
           ))}
         </div>
-
+        
         <div className="text-center mt-12">
+
           <p className="text-sm text-muted-foreground">
             Тусламж хэрэгтэй юу? <a href="#" className="text-primary hover:underline">Холбогдох</a>
           </p>
