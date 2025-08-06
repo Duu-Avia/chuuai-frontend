@@ -1,8 +1,5 @@
 "use client";
 import { useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-
 declare global {
   interface Window {
     fbAsyncInit?: () => void;
@@ -44,12 +41,12 @@ const FacebookConnect = () => {
     window.FB.login(
       (loginResponse: any) => {
         if (loginResponse.authResponse) {
-          console.log("✅ FB login success:", loginResponse);
+          console.log("✅ FB login success:");
 
           const userAccessToken = loginResponse.authResponse.accessToken;
 
           window.FB.api("/me/accounts", (pagesResponse: any) => {
-            console.log("📘 Pages response:", pagesResponse);
+            console.log("📘 Pages response:");
 
             const page = pagesResponse.data?.[0];
 
@@ -60,7 +57,6 @@ const FacebookConnect = () => {
 
             const { id: pageId, access_token: accessToken, name: pageName } = page;
 
-            console.log("📤 Sending to backend:", { pageId, accessToken, pageName });
 
             fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/connect-page`, {
               method: "POST",
