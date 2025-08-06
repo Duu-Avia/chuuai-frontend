@@ -43,12 +43,17 @@ const FacebookConnect = () => {
         if (loginResponse.authResponse) {
           console.log("✅ FB login success:");
 
-          const userAccessToken = loginResponse.authResponse.accessToken;
+    const userAccessToken = loginResponse.authResponse.accessToken;
 
-          window.FB.api("/me/accounts", (pagesResponse: any) => {
-            console.log("📘 Pages response:");
+window.FB.api(
+  "/me/accounts",
+  "GET",
+  { access_token: userAccessToken }, // ✅ Fix here
+  (pagesResponse: any) => {
+    console.log("📘 Pages response:");
 
-            const page = pagesResponse.data?.[0];
+    const page = pagesResponse.data?.[0];
+
 
             if (!page) {
               console.log("⚠️ No pages found");
