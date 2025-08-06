@@ -33,68 +33,74 @@ const FacebookConnect = () => {
     };
   }, []);
 
-  const handleLogin = () => {
-    if (!window.FB) return;
+  const handleLogin = async () => {
+  if (!window.FB) return;
 
-    console.log("➡️ Attempting FB.login...");
+  console.log("➡️ Attempting FB.login...");
 
-    window.FB.login(
-      (loginResponse: any) => {
-        if (loginResponse.authResponse) {
-          console.log("✅ FB login success:");
+  window.FB.login(
+    async (loginResponse: any) => {
+      if (loginResponse.authResponse) {
+        console.log("✅ FB login success");
 
-    const userAccessToken = loginResponse.authResponse.accessToken;
+        const shortToken = loginResponse.authResponse.accessToken;
 
-window.FB.api(
-  "/me/accounts",
-  "GET",
-  { access_token: userAccessToken }, // ✅ Fix here
-  (pagesResponse: any) => {
-    console.log("📘 Pages response:");
+        // 🔁 1. Exchange short-lived token for long-lived token
+        const exchangeRes = await fetch(
+          `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/exchange-token?shortToken=${shortToken}`
+        );
+        const exchangeData = await exchangeRes.json();
+        const longLivedUserToken = exchangeData.access_token;
 
-    const page = pagesResponse.data?.[0];
+        console.log("🔁 Long-lived token:", longLivedUserToken);
 
+        // 🧾 2. Fetch the page access token using the long-lived user token
+        window.FB.api(
+          "/me/accounts",
+          "GET",
+          { access_token: longLivedUserToken },
+          (pagesResponse: any) => {
+            const page = pagesResponse.data?.[0];
 
             if (!page) {
-              console.log("⚠️ No pages found");
-              return alert("No pages found.");
+              alert("⚠️ No Facebook pages found.");
+              return;
             }
 
-            const { id: pageId, access_token: accessToken, name: pageName } = page;
+            const { id: pageId, access_token: pageAccessToken, name: pageName } = page;
 
-
+            // 📤 3. Send to backend
             fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/connect-page`, {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",
               },
-              body: JSON.stringify({ pageId, accessToken, pageName }),
+              body: JSON.stringify({ pageId, accessToken: pageAccessToken, pageName }),
             })
               .then((res) => {
                 if (res.ok) {
-                  console.log("✅ Page successfully saved to backend");
                   alert("✅ Facebook Page connected successfully!");
                 } else {
-                  console.error("❌ Backend save failed:", res.status);
-                  alert("❌ Failed to save page on backend.");
+                  alert("❌ Failed to connect page.");
                 }
               })
               .catch((err) => {
-                console.error("❌ Error sending to backend:", err);
                 alert("❌ Error connecting page.");
+                console.error(err);
               });
-          });
-        } else {
-          console.warn("❌ FB login cancelled or failed:", loginResponse);
-          alert("Facebook login was cancelled or failed.");
-        }
-      },
-      {
-        scope:
-          "pages_manage_metadata,pages_messaging,pages_read_engagement,pages_show_list",
+          }
+        );
+      } else {
+        alert("Facebook login was cancelled or failed.");
       }
-    );
-  };
+    },
+    {
+      scope:
+        "pages_manage_metadata,pages_messaging,pages_read_engagement,pages_show_list",
+    }
+  );
+};
+
 
   return (
     <div className="min-h-screen bg-[#0e0e10] flex items-center justify-center px-4">
