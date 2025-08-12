@@ -110,12 +110,12 @@ const FacebookConnect = () => {
             return;
           }
 
-          alert("✅ Facebook Page connected with long-lived token!");
+          alert("✅ Таны хуудас амжилттай холбогдлоо");
         }
       );
     } catch (e) {
       console.error(e);
-      alert("❌ Facebook login failed.");
+      alert("❌ Хуудас холболтонд алдаа гарлаа.");
     }
   };
 
