@@ -1,4 +1,5 @@
-import { Button } from "@/components/ui/button";
+import en from "@/app/translation-en"
+
 
 const Header = () => {
   return (
@@ -13,9 +14,18 @@ const Header = () => {
           </div>
           
           <nav className="hidden md:flex items-center space-x-8">
-            <a href="#features" className="text-muted-foreground hover:text-foreground transition-colors">Боломжууд</a>
-            <a href="#pricing" className="text-muted-foreground hover:text-foreground transition-colors">Багцууд</a>
-            <a href="#about" className="text-muted-foreground hover:text-foreground transition-colors">Бусад үйлчилгээ</a>
+            <a href="#features" className="text-muted-foreground hover:text-foreground transition-colors">
+              {/* Боломжууд */}
+              {en.Header.Боломжууд}
+              </a>
+            <a href="#pricing" className="text-muted-foreground hover:text-foreground transition-colors">
+              {/* Багцууд */}
+              {en.Header.Багцууд}
+              </a>
+            <a href="#about" className="text-muted-foreground hover:text-foreground transition-colors">
+              {/* Бусад үйлчилгээ */}
+              {en.Header.Бусадүйлчилгээ}
+              </a>
           </nav>
         </div>
       </div>
