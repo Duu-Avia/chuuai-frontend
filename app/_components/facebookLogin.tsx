@@ -45,7 +45,7 @@ const FacebookConnect = () => {
         },
         {
           scope:
-            "pages_manage_metadata,pages_messaging,pages_read_engagement,pages_show_list",
+            "pages_manage_metadata, pages_messaging ,pages_show_list",
         }
       );
     });
