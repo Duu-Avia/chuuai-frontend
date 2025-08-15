@@ -111,7 +111,7 @@ const FacebookConnect = () => {
             return;
           }
 
-          alert("✅ Таны хуудас амжилттай холбогдлоо");
+          alert("✅ Your page is successfully connected!");
         }
       );
     } catch (e) {

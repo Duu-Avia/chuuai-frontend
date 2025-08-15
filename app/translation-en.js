@@ -94,6 +94,7 @@ export default {
     ButtonForBuy: "Buy Now",
     Таөөрт: "Choose your plan",
     Таныбизнест: "Flexible pricing options tailored to your business"
+    
 
 
 
