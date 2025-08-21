@@ -60,18 +60,18 @@ const[selectedPlan, setSelectedPlan] = useState("");
       <div className="container mx-auto">
         <div className="text-center mb-16">
           <h2 className="text-4xl font-bold mb-4 text-foreground">
-            {/* Та өөрт тохирох багцаа сонгоно уу? */}
-            {en.Таөөрт}
+            Та өөрт тохирох багцаа сонгоно уу?
+            {/* {en.Таөөрт} */}
             
           </h2>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-           {/* Таны бизнест тохируулсан уян хатан үнийн сонголтууд. */}
+           Таны бизнест тохируулсан уян хатан үнийн сонголтууд.
             {en.Таныбизнест}
           </p>
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-          {/* {plans.map((plan, index) => (
+          {plans.map((plan, index) => (
             <Card 
               key={index} 
               className={`bg-card border-border hover:shadow-xl transition-all duration-300 relative ${
@@ -104,7 +104,6 @@ const[selectedPlan, setSelectedPlan] = useState("");
                     </li>
                   ))}
                 </ul>
-                <Link href="/page-connection" className="w-full">
 <Button
   className={` w-full mt-6 cursor-pointer min-w-48 shadow-xs hover:shadow-[0_0_25px_rgba(173,216,230,0.4)] hover:scale-103 transition-all duration-300 ${
     plan.name === "Сошиал Про"
@@ -116,16 +115,15 @@ const[selectedPlan, setSelectedPlan] = useState("");
         : "bg-muted text-foreground hover:bg-muted-foreground/10"
   }`}
   size="lg"
-  onClick={() => setSelectedPlan(plan.name)}
+  onClick={() => {setSelectedPlan(plan.name),  window.location.assign('/page-connection');}}
 >
   Худалдаж авах
 </Button>
-                </Link>
               </CardContent>
             </Card>
-          ))} */}
+          ))}
 
- {en.Pricing.plans.map((plan, index) => (
+ {/* {en.Pricing.plans.map((plan, index) => (
             <Card 
               key={index} 
               className={`bg-card border-border hover:shadow-xl transition-all duration-300 relative ${
@@ -172,13 +170,12 @@ const[selectedPlan, setSelectedPlan] = useState("");
   size="lg"
   onClick={() => setSelectedPlan(plan.name)}
 >
-  {/* Худалдаж авах */}
   {en.ButtonForBuy}
 </Button>
                 </Link>
               </CardContent>
             </Card>
-          ))}
+          ))} */}
 
         </div>
         
