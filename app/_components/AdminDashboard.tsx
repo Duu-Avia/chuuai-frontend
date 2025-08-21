@@ -1,4 +1,3 @@
-// app/_components/AdminDashboard.tsx
 "use client";
 import { useEffect, useMemo, useState } from "react";
 import { LayoutDashboard, Plus } from "lucide-react";
