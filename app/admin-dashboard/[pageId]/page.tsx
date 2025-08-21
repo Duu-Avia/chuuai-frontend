@@ -1,6 +1,6 @@
-// app/admin-dashboard/[pageId]/page.tsx
 import AdminDashboard from "@/app/_components/AdminDashboard";
 
-export default function Page({ params }: { params: { pageId: string } }) {
-  return <AdminDashboard pageId={params.pageId} />;
+export default function Page({ params }: any) {
+  const pageId = decodeURIComponent(params.pageId);
+  return <AdminDashboard pageId={pageId} />;
 }
