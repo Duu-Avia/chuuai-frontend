@@ -1,6 +1,6 @@
 "use client";
 import { useEffect } from "react";
-import { useAuth } from "@clerk/nextjs"; // 👈 add this
+import { useAuth } from "@clerk/nextjs";
 
 declare global {
   interface Window {
@@ -10,10 +10,9 @@ declare global {
 }
 
 const FacebookConnect = () => {
-  const { getToken, isSignedIn } = useAuth(); // 👈 get Clerk token
+  const { getToken, isSignedIn } = useAuth();
 
   useEffect(() => {
-    // Initialize FB SDK
     window.fbAsyncInit = function () {
       window.FB?.init({
         appId: process.env.NEXT_PUBLIC_FACEBOOK_APP_ID!,
@@ -30,7 +29,6 @@ const FacebookConnect = () => {
     script.crossOrigin = "anonymous";
     script.src = "https://connect.facebook.net/en_US/sdk.js";
     document.body.appendChild(script);
-
     return () => {
       document.body.removeChild(script);
     };
@@ -40,13 +38,8 @@ const FacebookConnect = () => {
     return new Promise((resolve, reject) => {
       if (!window.FB) return reject(new Error("FB SDK not loaded"));
       window.FB.login(
-        (resp: any) => {
-          if (resp?.authResponse) return resolve(resp);
-          reject(new Error("Login cancelled or failed"));
-        },
-        {
-          scope: "pages_manage_metadata,pages_messaging,pages_show_list",
-        }
+        (resp: any) => (resp?.authResponse ? resolve(resp) : reject(new Error("Login cancelled or failed"))),
+        { scope: "pages_manage_metadata,pages_messaging,pages_show_list" }
       );
     });
   }
@@ -90,24 +83,16 @@ const FacebookConnect = () => {
 
           const { id: pageId, access_token: pageAccessToken, name: pageName } = page;
 
-          // 3) Connect page on backend — 👇 INCLUDE CLERK TOKEN!
+          // 3) Connect page on backend (send Clerk token)
           const token = await getToken();
-          const saveRes = await fetch(
-            `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/connect-page`,
-            {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                ...(token ? { Authorization: `Bearer ${token}` } : {}), // 👈 critical
-              },
-              body: JSON.stringify({
-                pageId,
-                accessToken: pageAccessToken,
-                pageName,
-              }),
-            }
-          );
-
+          const saveRes = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/connect-page`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            },
+            body: JSON.stringify({ pageId, accessToken: pageAccessToken, pageName }),
+          });
           const saveJson = await saveRes.json().catch(() => ({}));
           if (!saveRes.ok) {
             console.error("❌ Connect failed:", saveJson);
@@ -115,9 +100,31 @@ const FacebookConnect = () => {
             return;
           }
 
+          // 4) Activate subscription: set subscriptionEndsAt = now + 1 month
+          try {
+            const activateRes = await fetch(
+              `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/subscription/activate?pageId=${encodeURIComponent(
+                pageId
+              )}`,
+              {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  ...(token ? { Authorization: `Bearer ${token}` } : {}),
+                },
+              }
+            );
+            if (!activateRes.ok) {
+              console.warn("⚠️ Subscription activate failed:", await activateRes.text());
+              // Non-blocking, but you likely want this to succeed.
+            }
+          } catch (e) {
+            console.warn("⚠️ Subscription activate error:", e);
+          }
+
           console.log("✅ Connected:", saveJson);
           alert("✅ Таны хуудас амжилттай холбогдлоо!");
-          // Optional: redirect to your dashboard route
+          // Optional: redirect to dashboard for that page
           // window.location.href = `/admin-dashboard/${pageId}`;
         }
       );
