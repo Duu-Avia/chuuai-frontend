@@ -1,3 +1,4 @@
+// app/_components/AdminDashboard.tsx
 "use client";
 import { useEffect, useMemo, useState } from "react";
 import { LayoutDashboard, Plus } from "lucide-react";
@@ -11,6 +12,15 @@ import { makeProductApi } from "@/lib/productApi";
 import { Product, ProductDraft, ProductFormData } from "@/lib/productTypes";
 
 type View = "table" | "add" | "edit";
+
+type PlanResponse = {
+  plan: string;
+  caps: any;
+  usage: { month: string; messages: number };
+  subscriptionActive: boolean;
+  subscriptionEndsAt: string | null;
+  limitExceeded: boolean;
+};
 
 export default function AdminDashboard({
   pageId,
@@ -32,13 +42,58 @@ export default function AdminDashboard({
   const [view, setView] = useState<View>("table");
   const [editing, setEditing] = useState<Product | null>(null);
 
+  // ── NEW: plan gate state
+  const [plan, setPlan] = useState<PlanResponse | null>(null);
+  const [checkingPlan, setCheckingPlan] = useState(true);
+
+  // ── NEW: fetch plan first
   useEffect(() => {
     (async () => {
       if (!isSignedIn || !pageId) return;
       try {
+        setCheckingPlan(true);
+        const token = await getToken();
+        const res = await fetch(
+          `${backendBaseUrl}/plan?pageId=${encodeURIComponent(pageId)}`,
+          {
+            headers: {
+              "Content-Type": "application/json",
+              ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            },
+          }
+        );
+        const data = (await res.json()) as PlanResponse;
+        if (!res.ok) {
+          throw new Error((data as any)?.error || "Failed to load plan");
+        }
+        setPlan(data);
+      } catch (e: any) {
+        console.error(e);
+        toast({
+          title: "Төлөвлөгөө шалгах үед алдаа гарлаа",
+          description: e?.message || String(e),
+          variant: "destructive",
+        });
+        setPlan(null);
+      } finally {
+        setCheckingPlan(false);
+      }
+    })();
+  }, [backendBaseUrl, getToken, isSignedIn, pageId, toast]);
+
+  // Load products only if active & not exceeded
+  useEffect(() => {
+    (async () => {
+      if (!isSignedIn || !pageId) return;
+      if (checkingPlan) return;
+      if (!plan?.subscriptionActive || plan?.limitExceeded) {
+        setProducts([]);
+        setLoading(false);
+        return;
+      }
+      try {
         setLoading(true);
         const result = await api.list();
-        // Support both shapes: array OR { items, nextCursor }
         const items: any[] = Array.isArray(result) ? result : result?.items || [];
         const normalized = items.map((p) => ({
           ...p,
@@ -47,7 +102,7 @@ export default function AdminDashboard({
         setProducts(normalized);
       } catch (e: any) {
         toast({
-          title: "Failed to load products",
+          title: "Барааны жагсаалт ачааллахад алдаа гарлаа",
           description: e?.error || String(e),
           variant: "destructive",
         });
@@ -55,13 +110,20 @@ export default function AdminDashboard({
         setLoading(false);
       }
     })();
-  }, [api, isSignedIn, pageId, toast]);
+  }, [api, isSignedIn, pageId, checkingPlan, plan, toast]);
 
   // create
   async function handleAddProduct(form: ProductDraft) {
+    if (!plan?.subscriptionActive) {
+      toast({ title: "Таны багцын хугацаа дууссан байна", variant: "destructive" });
+      return;
+    }
+    if (plan?.limitExceeded) {
+      toast({ title: "Таны хэрэглээний лимит хэтэрсэн байна", variant: "destructive" });
+      return;
+    }
     try {
       const payload: ProductFormData = {
-        // pageId is injected by backend guard; sending it is optional
         sku: form.sku || "",
         name: form.name,
         description: form.description || "",
@@ -83,9 +145,16 @@ export default function AdminDashboard({
   // edit
   async function handleEditProduct(form: ProductDraft) {
     if (!editing?._id) return;
+    if (!plan?.subscriptionActive) {
+      toast({ title: "Таны багцын хугацаа дууссан байна", variant: "destructive" });
+      return;
+    }
+    if (plan?.limitExceeded) {
+      toast({ title: "Таны хэрэглээний лимит хэтэрсэн байна", variant: "destructive" });
+      return;
+    }
     try {
       const payload: Partial<ProductFormData> = {
-        // pageId is injected; not required in payload
         sku: form.sku,
         name: form.name,
         description: form.description,
@@ -109,6 +178,14 @@ export default function AdminDashboard({
 
   // delete
   async function handleDeleteProduct(id: string) {
+    if (!plan?.subscriptionActive) {
+      toast({ title: "Таны багцын хугацаа дууссан байна", variant: "destructive" });
+      return;
+    }
+    if (plan?.limitExceeded) {
+      toast({ title: "Таны хэрэглээний лимит хэтэрсэн байна", variant: "destructive" });
+      return;
+    }
     try {
       const keep = products.filter((x) => String(x._id) !== String(id));
       setProducts(keep); // optimistic
@@ -121,6 +198,14 @@ export default function AdminDashboard({
 
   // +/- stock
   async function handleAdjustStock(id: string, delta: number) {
+    if (!plan?.subscriptionActive) {
+      toast({ title: "Таны багцын хугацаа дууссан байна", variant: "destructive" });
+      return;
+    }
+    if (plan?.limitExceeded) {
+      toast({ title: "Таны хэрэглээний лимит хэтэрсэн байна", variant: "destructive" });
+      return;
+    }
     try {
       setProducts((prev) =>
         prev.map((x) => (String(x._id) === String(id) ? { ...x, stock: Math.max(0, (x.stock || 0) + delta) } : x))
@@ -133,11 +218,39 @@ export default function AdminDashboard({
       toast({ title: "Stock change failed", description: e?.error || String(e), variant: "destructive" });
     }
   }
-  
 
+  // ── Simple gates (block the whole dashboard)
+  if (checkingPlan) {
+    return (
+      <div className="min-h-screen flex items-center justify-center text-sm text-muted-foreground">
+        Төлөвлөгөө шалгаж байна...
+      </div>
+    );
+  }
+  if (!plan?.subscriptionActive) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-xl font-semibold mb-2">Таны багцын хугацаа дууссан байна</h2>
+          <p className="text-muted-foreground">Сунгах хүртэл хяналтын самбар түдгэлзсэн.</p>
+        </div>
+      </div>
+    );
+  }
+  if (plan?.limitExceeded) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-xl font-semibold mb-2">Таны хэрэглээний лимит хэтэрсэн байна</h2>
+          <p className="text-muted-foreground">Сарын лимит дахин шинэчлэгдэх хүртэл түр хаагдсан.</p>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Normal dashboard rendering
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
       <header className="border-b border-admin-border bg-card/50 backdrop-blur-sm sticky top-0 z-50">
         <div className="container mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -157,7 +270,6 @@ export default function AdminDashboard({
         </div>
       </header>
 
-      {/* Main */}
       <main className="container mx-auto px-6 py-8">
         {view === "table" && (
           <ProductTable
