@@ -103,7 +103,7 @@ const FacebookConnect = () => {
           // 4) Activate subscription: set subscriptionEndsAt = now + 1 month
           try {
             const activateRes = await fetch(
-              `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/subscription/activate?pageId=${encodeURIComponent(
+              `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/subscription/renew?pageId=${encodeURIComponent(
                 pageId
               )}`,
               {
