@@ -133,6 +133,7 @@ export default function AdminDashboard({
       toast({ title: "Stock change failed", description: e?.error || String(e), variant: "destructive" });
     }
   }
+  
 
   return (
     <div className="min-h-screen bg-background">
