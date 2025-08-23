@@ -2,7 +2,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { LayoutDashboard, Plus } from "lucide-react";
+import { LayoutDashboard, Plus, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@clerk/nextjs";
@@ -25,7 +25,6 @@ type PlanResponse = {
 
 function withApiPrefix(url: string) {
   if (!url) return "/api";
-  // normalize ending slash
   const u = url.endsWith("/") ? url.slice(0, -1) : url;
   return u.endsWith("/api") ? u : `${u}/api`;
 }
@@ -52,65 +51,56 @@ export default function AdminDashboard({
   const [view, setView] = useState<View>("table");
   const [editing, setEditing] = useState<Product | null>(null);
 
-  // ── Plan gate state
+  // Plan gate
   const [plan, setPlan] = useState<PlanResponse | null>(null);
   const [checkingPlan, setCheckingPlan] = useState(true);
+  const [planError, setPlanError] = useState<string | null>(null);
 
-  // ── Fetch plan (no-store so DB edits reflect instantly)
+  async function fetchPlan() {
+    setPlanError(null);
+    setCheckingPlan(true);
+    try {
+      const token = await getToken();
+      const url = `${apiBase}/plan?pageId=${encodeURIComponent(pageId)}&t=${Date.now()}`;
+      const res = await fetch(url, {
+        headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        cache: "no-store",
+      });
+      const data = (await res.json()) as PlanResponse | { error?: string };
+      if (!res.ok) throw new Error((data as any)?.error || "Failed to load plan");
+      setPlan(data as PlanResponse);
+    } catch (e: any) {
+      setPlan(null);
+      setPlanError(e?.message || String(e));
+      toast({
+        title: "Төлөвлөгөө уншихад алдаа",
+        description: e?.message || String(e),
+        variant: "destructive",
+      });
+    } finally {
+      setCheckingPlan(false);
+    }
+  }
+
+  // fetch plan first
   useEffect(() => {
     if (!isSignedIn || !pageId) return;
+    fetchPlan();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [apiBase, isSignedIn, pageId]);
 
-    let cancelled = false;
-    (async () => {
-      try {
-        setCheckingPlan(true);
-        const token = await getToken();
-        const res = await fetch(
-          `${apiBase}/plan?pageId=${encodeURIComponent(pageId)}`,
-          {
-            headers: {
-              ...(token ? { Authorization: `Bearer ${token}` } : {}),
-            },
-            cache: "no-store",
-          }
-        );
-        const data = (await res.json()) as PlanResponse | { error?: string };
-        if (!res.ok) throw new Error((data as any)?.error || "Failed to load plan");
-        if (!cancelled) setPlan(data as PlanResponse);
-      } catch (e: any) {
-        console.error(e);
-        if (!cancelled) {
-          setPlan(null);
-          toast({
-            title: "Төлөвлөгөө уншихад алдаа",
-            description: e?.message || String(e),
-            variant: "destructive",
-          });
-        }
-      } finally {
-        if (!cancelled) setCheckingPlan(false);
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [apiBase, getToken, isSignedIn, pageId, toast]);
-
-  // ── Load products only if active & not exceeded
+  // load products only when allowed
   useEffect(() => {
     if (!isSignedIn || !pageId) return;
     if (checkingPlan) return;
+    if (!plan?.subscriptionActive || plan?.limitExceeded) {
+      setProducts([]);
+      setLoading(false);
+      return;
+    }
 
     let cancelled = false;
     (async () => {
-      if (!plan?.subscriptionActive || plan?.limitExceeded) {
-        if (!cancelled) {
-          setProducts([]);
-          setLoading(false);
-        }
-        return;
-      }
       try {
         setLoading(true);
         const result = await api.list();
@@ -136,7 +126,7 @@ export default function AdminDashboard({
     };
   }, [api, isSignedIn, pageId, checkingPlan, plan, toast]);
 
-  // Guards before mutating
+  // guard helper for mutations
   function assertActive() {
     if (!plan?.subscriptionActive) {
       toast({ title: "Таны багцын хугацаа дууссан байна", variant: "destructive" });
@@ -228,7 +218,7 @@ export default function AdminDashboard({
     }
   }
 
-  // ── Plan gates
+  // Plan gates / error states
   if (checkingPlan) {
     return (
       <div className="min-h-screen flex items-center justify-center text-sm text-muted-foreground">
@@ -236,28 +226,50 @@ export default function AdminDashboard({
       </div>
     );
   }
-  if (!plan?.subscriptionActive) {
+
+  if (planError) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <h2 className="text-xl font-semibold mb-2">Таны багцын хугацаа дууссан байна</h2>
-          <p className="text-muted-foreground">Сунгах хүртэл хяналтын самбар түдгэлзсэн.</p>
-        </div>
-      </div>
-    );
-  }
-  if (plan?.limitExceeded) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <h2 className="text-xl font-semibold mb-2">Таны хэрэглээний лимит хэтэрсэн байна</h2>
-          <p className="text-muted-foreground">Сарын лимит дахин шинэчлэгдэх хүртэл түр хаагдсан.</p>
+        <div className="text-center space-y-3">
+          <h2 className="text-xl font-semibold">Төлөвлөгөө уншихад алдаа</h2>
+          <p className="text-muted-foreground">{planError}</p>
+          <Button onClick={fetchPlan} className="admin-gradient">
+            <RefreshCw className="h-4 w-4 mr-2" /> Дахин шалгах
+          </Button>
         </div>
       </div>
     );
   }
 
-  // ── Normal dashboard
+  if (!plan?.subscriptionActive) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center space-y-2">
+          <h2 className="text-xl font-semibold">Таны багцын хугацаа дууссан байна</h2>
+          <p className="text-muted-foreground">Сунгах хүртэл хяналтын самбар түдгэлзсэн.</p>
+          <Button onClick={fetchPlan} variant="secondary">
+            <RefreshCw className="h-4 w-4 mr-2" /> Дахин шалгах
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (plan?.limitExceeded) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center space-y-2">
+          <h2 className="text-xl font-semibold">Таны хэрэглээний лимит хэтэрсэн байна</h2>
+          <p className="text-muted-foreground">Сарын лимит дахин шинэчлэгдэх хүртэл түр хаагдсан.</p>
+          <Button onClick={fetchPlan} variant="secondary">
+            <RefreshCw className="h-4 w-4 mr-2" /> Дахин шалгах
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // Normal dashboard
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b border-admin-border bg-card/50 backdrop-blur-sm sticky top-0 z-50">
