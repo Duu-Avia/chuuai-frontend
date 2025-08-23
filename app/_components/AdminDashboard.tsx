@@ -1,5 +1,6 @@
 // app/_components/AdminDashboard.tsx
 "use client";
+
 import { useEffect, useMemo, useState } from "react";
 import { LayoutDashboard, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -14,13 +15,20 @@ import { Product, ProductDraft, ProductFormData } from "@/lib/productTypes";
 type View = "table" | "add" | "edit";
 
 type PlanResponse = {
-  plan: string;
+  plan: "starter" | "pro" | "enterprise" | string;
   caps: any;
   usage: { month: string; messages: number };
   subscriptionActive: boolean;
   subscriptionEndsAt: string | null;
   limitExceeded: boolean;
 };
+
+function withApiPrefix(url: string) {
+  if (!url) return "/api";
+  // normalize ending slash
+  const u = url.endsWith("/") ? url.slice(0, -1) : url;
+  return u.endsWith("/api") ? u : `${u}/api`;
+}
 
 export default function AdminDashboard({
   pageId,
@@ -32,9 +40,11 @@ export default function AdminDashboard({
   const { getToken, isSignedIn } = useAuth();
   const { toast } = useToast();
 
+  const apiBase = withApiPrefix(backendBaseUrl);
+
   const api = useMemo(
-    () => makeProductApi(backendBaseUrl, getToken, pageId),
-    [backendBaseUrl, getToken, pageId]
+    () => makeProductApi(apiBase, getToken, pageId),
+    [apiBase, getToken, pageId]
   );
 
   const [products, setProducts] = useState<Product[]>([]);
@@ -42,53 +52,63 @@ export default function AdminDashboard({
   const [view, setView] = useState<View>("table");
   const [editing, setEditing] = useState<Product | null>(null);
 
-  // ── NEW: plan gate state
+  // ── Plan gate state
   const [plan, setPlan] = useState<PlanResponse | null>(null);
   const [checkingPlan, setCheckingPlan] = useState(true);
 
-  // ── NEW: fetch plan first
+  // ── Fetch plan (no-store so DB edits reflect instantly)
   useEffect(() => {
+    if (!isSignedIn || !pageId) return;
+
+    let cancelled = false;
     (async () => {
-      if (!isSignedIn || !pageId) return;
       try {
         setCheckingPlan(true);
         const token = await getToken();
         const res = await fetch(
-          `${backendBaseUrl}/plan?pageId=${encodeURIComponent(pageId)}`,
+          `${apiBase}/plan?pageId=${encodeURIComponent(pageId)}`,
           {
             headers: {
-              "Content-Type": "application/json",
               ...(token ? { Authorization: `Bearer ${token}` } : {}),
             },
+            cache: "no-store",
           }
         );
-        const data = (await res.json()) as PlanResponse;
-        if (!res.ok) {
-          throw new Error((data as any)?.error || "Failed to load plan");
-        }
-        setPlan(data);
+        const data = (await res.json()) as PlanResponse | { error?: string };
+        if (!res.ok) throw new Error((data as any)?.error || "Failed to load plan");
+        if (!cancelled) setPlan(data as PlanResponse);
       } catch (e: any) {
         console.error(e);
-        toast({
-          title: "Төлөвлөгөө шалгах үед алдаа гарлаа",
-          description: e?.message || String(e),
-          variant: "destructive",
-        });
-        setPlan(null);
+        if (!cancelled) {
+          setPlan(null);
+          toast({
+            title: "Төлөвлөгөө уншихад алдаа",
+            description: e?.message || String(e),
+            variant: "destructive",
+          });
+        }
       } finally {
-        setCheckingPlan(false);
+        if (!cancelled) setCheckingPlan(false);
       }
     })();
-  }, [backendBaseUrl, getToken, isSignedIn, pageId, toast]);
 
-  // Load products only if active & not exceeded
+    return () => {
+      cancelled = true;
+    };
+  }, [apiBase, getToken, isSignedIn, pageId, toast]);
+
+  // ── Load products only if active & not exceeded
   useEffect(() => {
+    if (!isSignedIn || !pageId) return;
+    if (checkingPlan) return;
+
+    let cancelled = false;
     (async () => {
-      if (!isSignedIn || !pageId) return;
-      if (checkingPlan) return;
       if (!plan?.subscriptionActive || plan?.limitExceeded) {
-        setProducts([]);
-        setLoading(false);
+        if (!cancelled) {
+          setProducts([]);
+          setLoading(false);
+        }
         return;
       }
       try {
@@ -99,7 +119,7 @@ export default function AdminDashboard({
           ...p,
           image: Array.isArray(p.images) ? p.images?.[0] : p.images,
         }));
-        setProducts(normalized);
+        if (!cancelled) setProducts(normalized);
       } catch (e: any) {
         toast({
           title: "Барааны жагсаалт ачааллахад алдаа гарлаа",
@@ -107,21 +127,31 @@ export default function AdminDashboard({
           variant: "destructive",
         });
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     })();
+
+    return () => {
+      cancelled = true;
+    };
   }, [api, isSignedIn, pageId, checkingPlan, plan, toast]);
 
-  // create
-  async function handleAddProduct(form: ProductDraft) {
+  // Guards before mutating
+  function assertActive() {
     if (!plan?.subscriptionActive) {
       toast({ title: "Таны багцын хугацаа дууссан байна", variant: "destructive" });
-      return;
+      return false;
     }
     if (plan?.limitExceeded) {
       toast({ title: "Таны хэрэглээний лимит хэтэрсэн байна", variant: "destructive" });
-      return;
+      return false;
     }
+    return true;
+  }
+
+  // create
+  async function handleAddProduct(form: ProductDraft) {
+    if (!assertActive()) return;
     try {
       const payload: ProductFormData = {
         sku: form.sku || "",
@@ -145,14 +175,7 @@ export default function AdminDashboard({
   // edit
   async function handleEditProduct(form: ProductDraft) {
     if (!editing?._id) return;
-    if (!plan?.subscriptionActive) {
-      toast({ title: "Таны багцын хугацаа дууссан байна", variant: "destructive" });
-      return;
-    }
-    if (plan?.limitExceeded) {
-      toast({ title: "Таны хэрэглээний лимит хэтэрсэн байна", variant: "destructive" });
-      return;
-    }
+    if (!assertActive()) return;
     try {
       const payload: Partial<ProductFormData> = {
         sku: form.sku,
@@ -178,14 +201,7 @@ export default function AdminDashboard({
 
   // delete
   async function handleDeleteProduct(id: string) {
-    if (!plan?.subscriptionActive) {
-      toast({ title: "Таны багцын хугацаа дууссан байна", variant: "destructive" });
-      return;
-    }
-    if (plan?.limitExceeded) {
-      toast({ title: "Таны хэрэглээний лимит хэтэрсэн байна", variant: "destructive" });
-      return;
-    }
+    if (!assertActive()) return;
     try {
       const keep = products.filter((x) => String(x._id) !== String(id));
       setProducts(keep); // optimistic
@@ -198,14 +214,7 @@ export default function AdminDashboard({
 
   // +/- stock
   async function handleAdjustStock(id: string, delta: number) {
-    if (!plan?.subscriptionActive) {
-      toast({ title: "Таны багцын хугацаа дууссан байна", variant: "destructive" });
-      return;
-    }
-    if (plan?.limitExceeded) {
-      toast({ title: "Таны хэрэглээний лимит хэтэрсэн байна", variant: "destructive" });
-      return;
-    }
+    if (!assertActive()) return;
     try {
       setProducts((prev) =>
         prev.map((x) => (String(x._id) === String(id) ? { ...x, stock: Math.max(0, (x.stock || 0) + delta) } : x))
@@ -219,7 +228,7 @@ export default function AdminDashboard({
     }
   }
 
-  // ── Simple gates (block the whole dashboard)
+  // ── Plan gates
   if (checkingPlan) {
     return (
       <div className="min-h-screen flex items-center justify-center text-sm text-muted-foreground">
@@ -248,7 +257,7 @@ export default function AdminDashboard({
     );
   }
 
-  // ── Normal dashboard rendering
+  // ── Normal dashboard
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b border-admin-border bg-card/50 backdrop-blur-sm sticky top-0 z-50">
